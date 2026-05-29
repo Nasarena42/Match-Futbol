@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Match Futbol - Inicio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>⚽ Match Futbol</h2>
+    <a href="index.html">🏠 Inicio</a>
+    <a href="pages/clientes.html">👥 Clientes</a>
+    <a href="pages/reservas.html">📅 Reservas</a>
+  </div>
+
+  <div class="contenido">
+    <h1>Panel Principal</h1>
+
+    <div class="tarjetas">
+
+      <div class="tarjeta verde" onclick="location.href='pages/clientes.html'">
+        <p class="numero" id="totalClientes">0</p>
+        <p>Clientes registrados</p>
+      </div>
+
+      <div class="tarjeta azul" onclick="location.href='pages/reservas.html'">
+        <p class="numero" id="totalReservas">0</p>
+        <p>Reservas activas</p>
+      </div>
+
+    </div>
+
+    <h2>Reservas de hoy</h2>
+    <div id="reservasHoy">
+      <p>No hay reservas para hoy.</p>
+    </div>
+
+  </div>
+
+  <script>
+    // Mostrar total de clientes
+    var clientes = JSON.parse(localStorage.getItem("clientes")) || [];
+    document.getElementById("totalClientes").textContent = clientes.length;
+
+    // Mostrar total de reservas activas
+    var reservas = JSON.parse(localStorage.getItem("reservas")) || [];
+    var activas = [];
+    for (var i = 0; i < reservas.length; i++) {
+      if (reservas[i].estado != "cancelada") {
+        activas.push(reservas[i]);
+      }
+    }
+    document.getElementById("totalReservas").textContent = activas.length;
+
+    // Mostrar reservas de hoy
+    var hoy = new Date().toISOString().split("T")[0];
+    var reservasHoy = [];
+    for (var i = 0; i < reservas.length; i++) {
+      if (reservas[i].fecha == hoy && reservas[i].estado != "cancelada") {
+        reservasHoy.push(reservas[i]);
+      }
+    }
+
+    var divHoy = document.getElementById("reservasHoy");
+    if (reservasHoy.length == 0) {
+      divHoy.innerHTML = "<p>No hay reservas para hoy.</p>";
+    } else {
+      var html = "<table border='1' cellpadding='8' cellspacing='0'>";
+      html += "<tr><th>Hora</th><th>Cliente</th><th>Cancha</th><th>Estado pago</th></tr>";
+      for (var i = 0; i < reservasHoy.length; i++) {
+        var r = reservasHoy[i];
+        html += "<tr>";
+        html += "<td>" + r.hora + "</td>";
+        html += "<td>" + r.cliente + "</td>";
+        html += "<td>Cancha " + r.cancha + "</td>";
+        html += "<td>" + r.estadoPago + "</td>";
+        html += "</tr>";
+      }
+      html += "</table>";
+      divHoy.innerHTML = html;
+    }
+  </script>
+
+</body>
+</html>
