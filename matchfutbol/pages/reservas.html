@@ -12,15 +12,15 @@
     <a href="../index.html">🏠 Inicio</a>
     <a href="clientes.html">👥 Clientes</a>
     <a href="reservas.html">📅 Reservas</a>
+    <a href="pagos.html">💰 Pagos</a>
+    <a href="eventos.html">🎉 Eventos</a>
   </div>
 
   <div class="contenido">
     <h1>📅 Reservas</h1>
 
-    <!-- Mensaje de confirmacion -->
-    <div class="mensaje-ok" id="mensajeOk">✅ Reserva guardada con éxito.</div>
+    <div class="mensaje-ok" id="mensajeOk"></div>
 
-    <!-- Formulario nueva reserva -->
     <h2>Nueva reserva</h2>
     <form id="formReserva">
 
@@ -41,7 +41,7 @@
       <input type="date" id="fecha">
 
       <label>Hora *</label>
-      <select id="hora">
+      <select id="hora" onchange="calcularPrecio()">
         <option value="08:00">08:00</option>
         <option value="09:00">09:00</option>
         <option value="10:00">10:00</option>
@@ -60,6 +60,18 @@
         <option value="23:00">23:00</option>
       </select>
 
+      <label>Turno</label>
+      <input type="text" id="turno" readonly style="background:#eee">
+
+      <label>Precio por hora ($)</label>
+      <input type="number" id="precio" readonly style="background:#eee">
+
+      <div style="background:#f0f0f0;padding:10px;border-radius:5px;font-size:0.85rem;margin-top:5px">
+        <strong>💡 Precios de referencia:</strong><br>
+        ☀️ Diurno (antes de 20:00): $30.000/hora<br>
+        🌙 Nocturno (20:00 en adelante): $35.000/hora
+      </div>
+
       <label>Seña pagada ($)</label>
       <input type="number" id="sena" placeholder="0" min="0">
 
@@ -74,8 +86,31 @@
 
     </form>
 
-    <!-- Tabla de reservas -->
     <h2>Lista de reservas</h2>
+    <div class="buscador">
+      <input type="date" id="filtroFecha" onchange="filtrarReservas()">
+      <select id="filtroHora" onchange="filtrarReservas()">
+        <option value="">-- Todas las horas --</option>
+        <option value="08:00">08:00</option>
+        <option value="09:00">09:00</option>
+        <option value="10:00">10:00</option>
+        <option value="11:00">11:00</option>
+        <option value="12:00">12:00</option>
+        <option value="13:00">13:00</option>
+        <option value="14:00">14:00</option>
+        <option value="15:00">15:00</option>
+        <option value="16:00">16:00</option>
+        <option value="17:00">17:00</option>
+        <option value="18:00">18:00</option>
+        <option value="19:00">19:00</option>
+        <option value="20:00">20:00</option>
+        <option value="21:00">21:00</option>
+        <option value="22:00">22:00</option>
+        <option value="23:00">23:00</option>
+      </select>
+      <button type="button" onclick="limpiarFiltros()">🔄 Limpiar filtros</button>
+    </div>
+
     <table>
       <thead>
         <tr>
@@ -84,6 +119,8 @@
           <th>Cancha</th>
           <th>Fecha</th>
           <th>Hora</th>
+          <th>Turno</th>
+          <th>Precio</th>
           <th>Seña</th>
           <th>Pago</th>
           <th>Estado</th>
@@ -91,7 +128,7 @@
         </tr>
       </thead>
       <tbody id="tablaReservas">
-        <tr><td colspan="9">No hay reservas registradas.</td></tr>
+        <tr><td colspan="11">No hay reservas registradas.</td></tr>
       </tbody>
     </table>
 
@@ -99,14 +136,10 @@
 
   <script>
 
-    // Cargar clientes en el select al abrir la pagina
     function cargarClientes() {
       var clientes = JSON.parse(localStorage.getItem("clientes")) || [];
-      var select   = document.getElementById("clienteSelect");
-
-      // Limpiar opciones anteriores (menos la primera)
+      var select = document.getElementById("clienteSelect");
       select.innerHTML = "<option value=''>-- Seleccioná un cliente --</option>";
-
       for (var i = 0; i < clientes.length; i++) {
         var opcion = document.createElement("option");
         opcion.value = clientes[i].nombre;
@@ -115,22 +148,38 @@
       }
     }
 
-    // Guardar una nueva reserva
+    function calcularPrecio() {
+      var hora = document.getElementById("hora").value;
+      var horaNum = parseInt(hora.split(":")[0]);
+      if (horaNum >= 20) {
+        document.getElementById("turno").value  = "🌙 Nocturno";
+        document.getElementById("precio").value = 35000;
+      } else {
+        document.getElementById("turno").value  = "☀️ Diurno";
+        document.getElementById("precio").value = 30000;
+      }
+    }
+
     function guardarReserva() {
       var cliente    = document.getElementById("clienteSelect").value;
       var cancha     = document.getElementById("cancha").value;
       var fecha      = document.getElementById("fecha").value;
       var hora       = document.getElementById("hora").value;
+      var turno      = document.getElementById("turno").value;
+      var precio     = document.getElementById("precio").value;
       var sena       = document.getElementById("sena").value;
       var estadoPago = document.getElementById("estadoPago").value;
 
-      // Validacion basica
       if (cliente == "" || fecha == "") {
         alert("El cliente y la fecha son obligatorios.");
         return;
       }
 
-      // Verificar que no haya otra reserva en la misma cancha, fecha y hora
+      if (precio == "") {
+        alert("Por favor seleccioná una hora para calcular el precio.");
+        return;
+      }
+
       var reservas = JSON.parse(localStorage.getItem("reservas")) || [];
       for (var i = 0; i < reservas.length; i++) {
         var r = reservas[i];
@@ -140,13 +189,14 @@
         }
       }
 
-      // Crear objeto reserva
       var nuevaReserva = {
         cliente:    cliente,
         cancha:     cancha,
         fecha:      fecha,
         hora:       hora,
-        sena:       sena || "0",
+        turno:      turno,
+        precio:     Number(precio),
+        sena:       Number(sena || 0),
         estadoPago: estadoPago,
         estado:     "activa"
       };
@@ -154,44 +204,97 @@
       reservas.push(nuevaReserva);
       localStorage.setItem("reservas", JSON.stringify(reservas));
 
-      // Limpiar formulario
       document.getElementById("clienteSelect").value = "";
       document.getElementById("fecha").value         = "";
       document.getElementById("sena").value          = "";
       document.getElementById("estadoPago").value    = "Seña pagada";
+      document.getElementById("turno").value         = "";
+      document.getElementById("precio").value        = "";
 
-      // Mostrar mensaje
       var msg = document.getElementById("mensajeOk");
+      msg.innerHTML = "✅ Reserva confirmada para <strong>" + cliente + "</strong> — Cancha " + cancha + " — " + formatearFecha(fecha) + " a las " + hora + "hs — " + turno + " — $" + Number(precio).toLocaleString("es-AR");
       msg.style.display = "block";
-      setTimeout(function() { msg.style.display = "none"; }, 2500);
+      setTimeout(function() { msg.style.display = "none"; }, 4000);
 
       mostrarReservas();
     }
 
-    // Mostrar reservas en la tabla
-    function mostrarReservas() {
+    function filtrarReservas() {
+      var fecha = document.getElementById("filtroFecha").value;
+      var hora  = document.getElementById("filtroHora").value;
       var reservas = JSON.parse(localStorage.getItem("reservas")) || [];
-      var tbody    = document.getElementById("tablaReservas");
+
+      var filtradas = reservas.filter(function(r, i) {
+        r._indice = i;
+        var coincideFecha = fecha == "" || r.fecha == fecha;
+        var coincideHora  = hora  == "" || r.hora  == hora;
+        return coincideFecha && coincideHora;
+      });
+
+      mostrarReservasFiltradas(filtradas);
+    }
+
+    function limpiarFiltros() {
+      document.getElementById("filtroFecha").value = "";
+      document.getElementById("filtroHora").value  = "";
+      mostrarReservas();
+    }
+
+    function mostrarReservasFiltradas(reservas) {
+      var tbody = document.getElementById("tablaReservas");
 
       if (reservas.length == 0) {
-        tbody.innerHTML = "<tr><td colspan='9'>No hay reservas registradas.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='11'>No se encontraron reservas.</td></tr>";
         return;
       }
 
       var html = "";
       for (var i = 0; i < reservas.length; i++) {
         var r = reservas[i];
-
-        // Color de fila si esta cancelada
         var estilo = r.estado == "cancelada" ? "style='color:gray;text-decoration:line-through'" : "";
-
         html += "<tr " + estilo + ">";
         html += "<td>" + (i + 1) + "</td>";
         html += "<td>" + r.cliente + "</td>";
         html += "<td>Cancha " + r.cancha + "</td>";
         html += "<td>" + formatearFecha(r.fecha) + "</td>";
         html += "<td>" + r.hora + "hs</td>";
-        html += "<td>$" + r.sena + "</td>";
+        html += "<td>" + (r.turno || "—") + "</td>";
+        html += "<td>$" + Number(r.precio || 0).toLocaleString("es-AR") + "</td>";
+        html += "<td>$" + Number(r.sena || 0).toLocaleString("es-AR") + "</td>";
+        html += "<td>" + r.estadoPago + "</td>";
+        html += "<td>" + r.estado + "</td>";
+        html += "<td>";
+        if (r.estado != "cancelada") {
+          html += "<button class='btn-eliminar' onclick='cancelarReserva(" + r._indice + ")'>Cancelar</button>";
+        }
+        html += "</td>";
+        html += "</tr>";
+      }
+      tbody.innerHTML = html;
+    }
+
+    function mostrarReservas() {
+      var reservas = JSON.parse(localStorage.getItem("reservas")) || [];
+      var tbody = document.getElementById("tablaReservas");
+
+      if (reservas.length == 0) {
+        tbody.innerHTML = "<tr><td colspan='11'>No hay reservas registradas.</td></tr>";
+        return;
+      }
+
+      var html = "";
+      for (var i = 0; i < reservas.length; i++) {
+        var r = reservas[i];
+        var estilo = r.estado == "cancelada" ? "style='color:gray;text-decoration:line-through'" : "";
+        html += "<tr " + estilo + ">";
+        html += "<td>" + (i + 1) + "</td>";
+        html += "<td>" + r.cliente + "</td>";
+        html += "<td>Cancha " + r.cancha + "</td>";
+        html += "<td>" + formatearFecha(r.fecha) + "</td>";
+        html += "<td>" + r.hora + "hs</td>";
+        html += "<td>" + (r.turno || "—") + "</td>";
+        html += "<td>$" + Number(r.precio || 0).toLocaleString("es-AR") + "</td>";
+        html += "<td>$" + Number(r.sena || 0).toLocaleString("es-AR") + "</td>";
         html += "<td>" + r.estadoPago + "</td>";
         html += "<td>" + r.estado + "</td>";
         html += "<td>";
@@ -201,30 +304,25 @@
         html += "</td>";
         html += "</tr>";
       }
-
       tbody.innerHTML = html;
     }
 
-    // Cancelar una reserva
     function cancelarReserva(indice) {
       var confirmar = confirm("¿Cancelar esta reserva?");
       if (!confirmar) return;
-
       var reservas = JSON.parse(localStorage.getItem("reservas")) || [];
       reservas[indice].estado = "cancelada";
       localStorage.setItem("reservas", JSON.stringify(reservas));
-
       mostrarReservas();
     }
 
-    // Formatear fecha de YYYY-MM-DD a DD/MM/YYYY
     function formatearFecha(fecha) {
       if (!fecha) return "—";
       var partes = fecha.split("-");
       return partes[2] + "/" + partes[1] + "/" + partes[0];
     }
 
-    // Inicializar pagina
+    calcularPrecio();
     cargarClientes();
     mostrarReservas();
 
