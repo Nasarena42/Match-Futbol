@@ -103,7 +103,7 @@ form textarea {
   width: 100%;
   padding: 8px;
   margin-top: 4px;
-  border: 1px solid #d3edd5;
+  border: 1px solid #e3edd3;
   border-radius: 4px;
   font-size: 0.95rem;
   box-sizing: border-box;
@@ -128,7 +128,7 @@ form button:hover {
 table {
   width: 100%;
   border-collapse: collapse;
-  color: #333;
+  color: #ffffff;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
@@ -144,8 +144,7 @@ th {
 td {
   padding: 10px 14px;
   border-bottom: 1px solid #eee;
-   background-color: white;
-   color: #222;
+  
 }
 
 tr:last-child td {
@@ -169,6 +168,14 @@ tr:hover td {
 
 .btn-eliminar {
   background-color: #c0392b;
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-filtro {
+  background-color: #3d78f8;
   color: white;
   border: none;
   padding: 5px 12px;
