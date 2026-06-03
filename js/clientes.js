@@ -57,13 +57,14 @@ function cerrarModal() {
 
 // Limpiar campos
 function limpiarForm() {
-  ['cNombre','cTelefono','cMail','cFechaNac','cObservaciones'].forEach(id => {
+  [cNombre,'cNombre','cTelefono','cMail','cFechaNac','cObservaciones'].forEach(id => {
     document.getElementById(id).value = '';
   });
 }
 
 // Guardar cliente (nuevo o edición)
 function guardarCliente() {
+  const nombre     = document.getElementById('cNombre').value.trim();
   const nombre     = document.getElementById('cNombre').value.trim();
   const telefono   = document.getElementById('cTelefono').value.trim();
   const mail       = document.getElementById('cMail').value.trim();
